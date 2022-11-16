@@ -3,4 +3,6 @@ riscv/testspace/*
 *.o
 *.vcd
 
+thoughts.md
+
 !.keep
