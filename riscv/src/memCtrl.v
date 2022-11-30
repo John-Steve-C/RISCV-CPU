@@ -12,16 +12,16 @@ module memCtrl (
     input wire [31:0] pc_from_fetcher,
     input wire en_from_fetcher,          //chip enable signal
     input wire drop_flag_from_fetcher,   //
-    output reg done_flag_to_fetcher,     //
+    output reg ok_flag_to_fetcher,     //
     output reg [31:0] inst_to_fetcher,
 
-    input wire [31:0] addr_from_ls_exe,
-    input wire [31:0] write_data_from_ls_exe,
-    input wire en_from_ls_exe,
-    input wire rw_flag_from_ls_exe,
-    input wire [2:0] size_from_ls_exe,
-    output reg done_flag_to_ls_exe,
-    output reg [31:0] load_data_to_ls_exe
+    input wire [31:0] addr_from_lsu,
+    input wire [31:0] write_data_from_lsu,
+    input wire en_from_lsu,
+    input wire rw_flag_from_lsu,
+    input wire [2:0] size_from_lsu,
+    output reg ok_flag_to_lsu,
+    output reg [31:0] load_data_to_lsu
 );
 
 // like ram, 0-write; 1-read
@@ -70,15 +70,15 @@ always @(posedge clk_in) begin
         buffer_fetch_valid <= 0;
         buffer_ls_valid <= 0;
         inst_to_fetcher <= 0;
-        load_data_to_ls_exe <= 0;
+        load_data_to_lsu <= 0;
         
 
     end
     else if (!rdy_in) begin
     end
     else begin
-        done_flag_to_fetcher <= 0;
-        done_flag_to_ls_exe <= 0;
+        ok_flag_to_fetcher <= 0;
+        ok_flag_to_lsu <= 0;
 
         addr_to_ram <= 0;
         rw_flag_to_ram <= READ;    
@@ -88,13 +88,13 @@ always @(posedge clk_in) begin
         if (en_shadow_fetch_valid) buffer_fetch_valid <= 0;
 
         // busy mem, put query into buffer
-        if (status_magic != IDLE || (en_from_fetcher && en_from_ls_exe)) begin
-            if (!en_from_fetcher && en_from_ls_exe) begin
+        if (status_magic != IDLE || (en_from_fetcher && en_from_lsu)) begin
+            if (!en_from_fetcher && en_from_lsu) begin
                 buffer_ls_valid <= 1;
-                buffer_rw_flag <= rw_flag_from_ls_exe;
-                buffer_addr <= addr_from_ls_exe;
-                buffer_write_data <= write_data_from_ls_exe;
-                buffer_size <= size_from_ls_exe;
+                buffer_rw_flag <= rw_flag_from_lsu;
+                buffer_addr <= addr_from_lsu;
+                buffer_write_data <= write_data_from_lsu;
+                buffer_size <= size_from_lsu;
             end
             else if (en_from_fetcher) begin
                 buffer_fetch_valid <= 1;
@@ -103,27 +103,27 @@ always @(posedge clk_in) begin
         end
 
         if (status_magic == IDLE) begin
-            done_flag_to_fetcher <= 0;
-            done_flag_to_ls_exe <= 0;
+            ok_flag_to_fetcher <= 0;
+            ok_flag_to_lsu <= 0;
             inst_to_fetcher <= 0;
-            load_data_to_ls_exe <= 0;
+            load_data_to_lsu <= 0;
 
-            if (en_from_ls_exe) begin
-                if (rw_flag_from_ls_exe == WRITE) begin
+            if (en_from_lsu) begin
+                if (rw_flag_from_lsu == WRITE) begin
                     ram_access_counter <= 0;
-                    ram_access_stop <= size_from_ls_exe;
-                    writing_data <= write_data_from_ls_exe;
+                    ram_access_stop <= size_from_lsu;
+                    writing_data <= write_data_from_lsu;
                     addr_to_ram <= 0;
-                    ram_access_pc <= addr_from_ls_exe;
+                    ram_access_pc <= addr_from_lsu;
                     rw_flag_to_ram <= WRITE;
 
 
                     status <= STORE;
                 end
-                else if (rw_flag_from_ls_exe == READ) begin
+                else if (rw_flag_from_lsu == READ) begin
                     ram_access_counter <= 0;
-                    ram_access_stop <= size_from_ls_exe;
-                    addr_to_ram <= addr_from_ls_exe;
+                    ram_access_stop <= size_from_lsu;
+                    addr_to_ram <= addr_from_lsu;
                     rw_flag_to_ram <= READ;
                     status <= LOAD;
                 end
