@@ -18,23 +18,32 @@ Tomasulo 分为三部分：Issue -> EXE -> Write Back
 除了助教提供的 `ram.v`,common 等模块，首先是 tomasulo 的基本组成
 
 - Issue
-  - [x] Fetcher
-  - [x] predictor : 二位饱和预测
-  - [x] Decoder
-  - [x] Dispatcher : 分发数据
+  - Fetcher : 从 memCtrl 中取数据
+  - predictor : 二位饱和预测（BHT）
+  - Decoder
+  - Dispatcher : 分发数据，综合部分连线
     - Instruction cache
 - Execute
-  - [x] Re-Order Buffer
-  - [x] Reservation Station
-    - ALU (EXE part)
-  - [ ] Load/Store Buffer (a queue like RoB)
+  - Re-Order Buffer
+  - Reservation Station
+    - ALU (EXE part) : 组合逻辑实现
+  - Load/Store Buffer (a queue like RoB)
     - Load/Store Unit (EXE part)
 
-- [ ] Memory Controller
+- Memory Controller
 
-- [x] Register File
+- Register File
 
-- uart(异步收发传输器) 将要传输的资料在串行通信与并行通信之间加以转换。
+## 工作进程
+
+- [x] 实现大致架构
+- [x] 完成CPU连线
+- [ ] 通过 simulation 测试
+- [ ] 通过 FPGA 测试
+
+## 其他信息
+
+uart(异步收发传输器) 将要传输的资料在串行通信与并行通信之间加以转换。
 
 > Q : the inst id in ROB/RS/LSB
 > 

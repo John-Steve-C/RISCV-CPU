@@ -3,9 +3,9 @@ module RegFile (
   	input wire rst_in,
   	input wire rdy_in,
 
-	// call-back
+	  // call-back
     // dispatcher
-	input wire en_signal_from_dispatcher,
+	  input wire en_signal_from_dispatcher,
     input wire [4:0] rd_from_dispatcher,
     input wire [4:0] Q_from_dispatcher,
     input wire [4:0] rs1_from_dispatcher,

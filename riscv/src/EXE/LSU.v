@@ -6,7 +6,7 @@ module LSU(
     input wire rdy_in,
 
     input wire enable_signal,
-    input wire [31:0] inst_name,
+    input wire [5:0] inst_name,
     input wire [31:0] mem_addr,
     input wire [31:0] store_value,
     
