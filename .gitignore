@@ -1,4 +1,8 @@
 riscv/testspace/*
+riscv/testcases_with_dump
+riscv/test
+
+riscv-tool
 
 *.o
 *.vcd

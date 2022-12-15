@@ -41,7 +41,7 @@ assign V2_to_dispatcher = en_signal_from_dispatcher ? V[rs2_from_dispatcher] : 0
 
 always @(posedge clk_in) begin
     if (rst_in) begin
-		for (i = 0;i < REG_SIZE; ++i) begin
+		for (i = 0;i < REG_SIZE; i = i + 1) begin
 			Q[i] <= 0;
 			V[i] <= 0;
 		end
@@ -50,7 +50,7 @@ always @(posedge clk_in) begin
     end
     else begin
 		if (rollback_flag_from_rob) begin
-			for (i = 0;i < REG_SIZE; ++i)
+			for (i = 0;i < REG_SIZE; i = i + 1)
 				Q[i] <= 0;
 		end
 		else begin

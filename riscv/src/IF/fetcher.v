@@ -34,6 +34,8 @@ module fetcher (
 
 integer i;
 
+localparam IDLE = 0, FETCH = 1;
+
 reg [31:0] pc, mem_pc;
 reg status;
 
@@ -60,7 +62,7 @@ always @(posedge clk_in) begin
     if (rst_in) begin
         pc <= 0;
 		mem_pc <= 0;
-		status <= 0;
+		status <= IDLE;
 
 		en_signal_to_mem <= 0;
 		pc_send_to_mem <= 0;
@@ -84,7 +86,7 @@ always @(posedge clk_in) begin
 			ok_flag_to_dispatcher <= 0;
 			pc <= target_pc_from_RoB;
 			mem_pc <= target_pc_from_RoB;
-			status <= 0;
+			status <= IDLE;
 			en_signal_to_mem <= 0;
 			drop_flag_to_mem <= 1;
 			ok_flag_to_dispatcher <= 0;
@@ -108,15 +110,16 @@ always @(posedge clk_in) begin
 			drop_flag_to_mem <= 0;
 			en_signal_to_mem <= 0;
 
-			if (status == 0) begin
+			// ready to fetch 
+			if (status == IDLE) begin
 				en_signal_to_mem <= 1;
 				pc_send_to_mem <= mem_pc;
-				status <= 1;
+				status <= FETCH;
 			end 
 			else if (ok_flag_from_mem) begin
 				// icache store
 				mem_pc <= (mem_pc == pc) ? mem_pc + 4 : pc;
-				status <= 0;
+				status <= IDLE;
 				valid[mem_pc[`INDEX_RANGE]] <= 1;
 				tag_store[mem_pc[`INDEX_RANGE]] <= mem_pc[`TAG_RANGE];
 				data_store[mem_pc[`INDEX_RANGE]] <= inst_from_mem;

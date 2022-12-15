@@ -1,6 +1,11 @@
 // riscv top module file
 // modification allowed for debugging purposes
 
+`include "/mnt/d/Coding/RISCV-CPU/riscv/src/ram.v"
+`include "/mnt/d/Coding/RISCV-CPU/riscv/src/hci.v"
+`include "/mnt/d/Coding/RISCV-CPU/riscv/src/cpu.v"
+
+
 module riscv_top
 #(
 	parameter SIM = 0						// whether in simulation

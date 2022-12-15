@@ -4,7 +4,7 @@ module RS(
   	input wire rdy_in,
 
     // dispatcher
-    input wire [31:0] en_signal_from_dispatcher,
+    input wire en_signal_from_dispatcher,
     input wire [5:0] inst_name_from_dispatcher,
     input wire [4:0] Q1_from_dispatcher,
     input wire [4:0] Q2_from_dispatcher,
@@ -90,11 +90,11 @@ assign exe_index = (busy[0] && Q1[0] == 0 && Q2[0] == 0) ? 0 :
                     ((busy[14] && Q1[14] == 0 && Q2[14] == 0) ? 14 :
                     ((busy[15] && Q1[15] == 0 && Q2[15] == 0) ? 15 :
                     RS_SIZE)))))))))))))));  
-
+// 能执行的就先执行，实现 乱序
 
 always @(posedge clk_in) begin
     if (rst_in) begin
-        for (i = 0;i < RS_SIZE; ++i) begin
+        for (i = 0;i < RS_SIZE; i = i + 1) begin
             busy[i] <= 0;
             inst_name[i] <= 0;  // NOP inst
             Q1[i] <= 0;
@@ -127,7 +127,7 @@ always @(posedge clk_in) begin
 
         // update
         if (valid_from_alu) begin
-            for (i = 0; i < RS_SIZE; ++i) begin
+            for (i = 0; i < RS_SIZE; i = i + 1) begin
                 if (Q1[i] == rob_id_from_alu) begin
                     V1[i] <= result_from_alu;
                     Q1[1] <= 0;
@@ -139,7 +139,7 @@ always @(posedge clk_in) begin
             end
         end
         if (valid_from_lsu) begin
-            for (i = 0; i < RS_SIZE; ++i) begin
+            for (i = 0; i < RS_SIZE; i = i + 1) begin
                 if (Q1[i] == rob_id_from_lsu) begin
                     V1[i] <= result_from_lsu;
                     Q1[1] <= 0;

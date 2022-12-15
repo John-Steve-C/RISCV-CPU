@@ -24,10 +24,10 @@ Tomasulo 分为三部分：Issue -> EXE -> Write Back
   - [x] Dispatcher : 分发数据
     - Instruction cache
 - Execute
-  - [ ] Re-Order Buffer
+  - [x] Re-Order Buffer
   - [x] Reservation Station
     - ALU (EXE part)
-  - [ ] Load/Store Buffer
+  - [ ] Load/Store Buffer (a queue like RoB)
     - Load/Store Unit (EXE part)
 
 - [ ] Memory Controller
@@ -35,3 +35,7 @@ Tomasulo 分为三部分：Issue -> EXE -> Write Back
 - [x] Register File
 
 - uart(异步收发传输器) 将要传输的资料在串行通信与并行通信之间加以转换。
+
+> Q : the inst id in ROB/RS/LSB
+> 
+> V : the value of data

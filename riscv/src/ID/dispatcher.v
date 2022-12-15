@@ -103,13 +103,11 @@ wire [31:0] real_V1 = (valid_from_alu && Q1_from_reg == rob_id_from_alu) ? resul
 wire [31:0] real_V2 = (valid_from_alu && Q2_from_reg == rob_id_from_alu) ? result_from_alu : ((valid_from_lsu && Q2_from_reg == rob_id_from_lsu) ? result_from_lsu :(Q2_ready_from_rob ? data2_from_rob : V2_from_reg));
 
 always @(posedge clk_in) begin
-    if (rst_in) begin
+    if (rst_in || !rdy_in || inst_name_from_decoder == `NOP || !ok_flag_from_fetcher || rollback_flag_from_rob) begin
         en_signal_to_rob <= 0;
         en_signal_to_lsb <= 0;
         en_signal_to_rs <= 0;
         en_signal_to_reg <= 0;
-    end
-    else if (!rdy_in) begin
     end
     else begin
         // rs
@@ -141,6 +139,7 @@ always @(posedge clk_in) begin
         rollback_pc_to_rob <= rollback_pc_from_fetcher;
 
         // modify en_signals
+        // 保证必须有具体值，防止 latch
         en_signal_to_rob <= 0;
         en_signal_to_lsb <= 0;
         en_signal_to_rs <= 0;
@@ -148,7 +147,7 @@ always @(posedge clk_in) begin
         if (ok_flag_from_fetcher) begin
             en_signal_to_rob <= 1;
             en_signal_to_reg <= 1;
-            if (inst_name_from_decoder >= `LB && inst_name_from_decoder <= `SW) en_signal_to_lsb = 1;
+            if (inst_name_from_decoder >= `LB && inst_name_from_decoder <= `SW) en_signal_to_lsb <= 1;
             else en_signal_to_rs <= 1;
         end
     end
