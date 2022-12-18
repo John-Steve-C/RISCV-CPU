@@ -1,6 +1,7 @@
-`include "/mnt/d/Coding/RISCV-CPU/riscv/src/ID/decoder.v"
+// `include "/mnt/d/Coding/RISCV-CPU/riscv/src/ID/decoder.v"
 `include "/mnt/d/Coding/RISCV-CPU/riscv/src/defines.v"
 
+// transfer the data and signals
 module dispatcher (
     input wire clk_in,
   	input wire rst_in,
@@ -20,6 +21,8 @@ module dispatcher (
     output reg is_store_to_rob,
     output reg predicted_jump_to_rob,
     output reg [31:0] pc_to_rob,
+    
+    input wire [4:0] rob_id_from_rob,
     output reg [31:0] rollback_pc_to_rob,
 
     // query V(data) from RoB to speed up
@@ -34,6 +37,7 @@ module dispatcher (
     // RegFile
     output reg en_signal_to_reg,
     output reg [4:0] rd_to_reg,
+    output wire [4:0] Q_to_reg,
 
     output wire [4:0] rs1_to_reg,
     output wire [4:0] rs2_to_reg,
@@ -51,6 +55,7 @@ module dispatcher (
     output reg [31:0] V2_to_rs,
     output reg [31:0] imm_to_rs,
     output reg [31:0] pc_to_rs,
+    output wire [4:0] rob_id_to_rs,     // pass rob_id
 
     // LSB
     output reg en_signal_to_lsb,
@@ -60,6 +65,7 @@ module dispatcher (
     output reg [31:0] V1_to_lsb,
     output reg [31:0] V2_to_lsb,
     output reg [31:0] imm_to_lsb,
+    output wire [4:0] rob_id_to_lsb,
 
     // ALU
     input wire valid_from_alu,
@@ -95,7 +101,11 @@ assign Q2_to_rob = Q2_from_reg;
 assign rs1_to_reg = rs1_from_decoder;
 assign rs2_to_reg = rs2_from_decoder;
 
-// get real Q and V
+assign Q_to_reg = rob_id_from_rob;
+assign rob_id_to_rs = rob_id_from_rob;
+assign rob_id_to_lsb = rob_id_from_rob;
+
+// get real(neweast) Q and V
 // query V in ALU/LSU first, then RoB, last Reg
 wire [4:0] real_Q1 = (valid_from_alu && Q1_from_reg == rob_id_from_alu) ? 0 : ((valid_from_lsu && Q1_from_reg == rob_id_from_lsu) ? 0 : (Q1_ready_from_rob ? 0 : Q1_from_reg));
 wire [4:0] real_Q2 = (valid_from_alu && Q2_from_reg == rob_id_from_alu) ? 0 : ((valid_from_lsu && Q2_from_reg == rob_id_from_lsu) ? 0 :(Q2_ready_from_rob ? 0 : Q2_from_reg));

@@ -34,7 +34,7 @@ module fetcher (
 
 integer i;
 
-localparam IDLE = 0, FETCH = 1;
+localparam IDLE = 0, FETCH = 1;		// status
 
 reg [31:0] pc, mem_pc;
 reg status;
@@ -47,14 +47,15 @@ reg status;
 // a direct-map i-cache
 reg valid [`ICACHE_SIZE - 1 : 0];
 reg [`TAG_RANGE] tag_store [`ICACHE_SIZE - 1 : 0];
-reg [31:0] data_store [`ICACHE_SIZE - 1 : 0];
+reg [31:0] data_store [`ICACHE_SIZE - 1 : 0];	// block behind the tag
 // the block size = 2^5, a block store one instruction
 
 // 判断 cache 是否 hit
 wire hit = valid[pc[`INDEX_RANGE]] && (tag_store[pc[`INDEX_RANGE]] == pc[`TAG_RANGE]);
 wire [31:0] get_inst = hit ? data_store[pc[`INDEX_RANGE]] : 0;
 
-// branch predict must go ahead of fetch, so it should be a wire
+// branch predict must go ahead of fetch, so it should be a wire 
+// work when signal changes
 assign query_pc_in_predictor = pc;
 assign query_inst_in_predictor = get_inst;
 
@@ -73,7 +74,7 @@ always @(posedge clk_in) begin
 		pc_send_to_dispatcher <= 0;
 		ok_flag_to_dispatcher <= 0;
 
-		for (i = 0; i < `ICACHE_SIZE; ++i) begin
+		for (i = 0; i < `ICACHE_SIZE; i = i + 1) begin
 			valid[i] <= 0;
 			tag_store[i] <= 0;
 			data_store[i] <= 0;
@@ -92,7 +93,7 @@ always @(posedge clk_in) begin
 			ok_flag_to_dispatcher <= 0;
 		end 
 		else begin 
-			if (hit && global_full == 0) begin
+			if (hit && !global_full) begin
 				// update pc
 				pc <= pc + (predicted_jump_from_predictor ? predicted_imm : 4); 
 				
@@ -102,7 +103,7 @@ always @(posedge clk_in) begin
 				// update dispatcher
 				pc_send_to_dispatcher <= pc;
 				predicted_jump_to_dispatcher <= predicted_jump_from_predictor; 
-				rollback_pc_to_dispatcher <= pc + 4;
+				rollback_pc_to_dispatcher <= pc + 4;	// no jump
 				ok_flag_to_dispatcher <= 1;
 			end 
 			else ok_flag_to_dispatcher <= 0;
@@ -124,7 +125,8 @@ always @(posedge clk_in) begin
 				tag_store[mem_pc[`INDEX_RANGE]] <= mem_pc[`TAG_RANGE];
 				data_store[mem_pc[`INDEX_RANGE]] <= inst_from_mem;
 			end
-		end	
+		end
+		// $display("%d", pc);
     end
 end
 

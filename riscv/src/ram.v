@@ -1,6 +1,6 @@
 // implements 128KB of on-board RAM
 
-`include "/mnt/d/Coding/RISCV-CPU/riscv/src/common/block_ram/block_ram.v"
+// `include "/mnt/d/Coding/RISCV-CPU/riscv/src/common/block_ram/block_ram.v"
 
 module ram
 #(

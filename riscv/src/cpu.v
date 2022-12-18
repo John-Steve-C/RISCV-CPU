@@ -1,17 +1,19 @@
 // RISCV32I CPU top module
 // port modification allowed for debugging purposes
 
-`include "/mnt/d/Coding/RISCV-CPU/riscv/src/IF/fetcher.v"
-`include "/mnt/d/Coding/RISCV-CPU/riscv/src/IF/predictor.v"
-`include "/mnt/d/Coding/RISCV-CPU/riscv/src/memCtrl.v"
-`include "/mnt/d/Coding/RISCV-CPU/riscv/src/RoB.v"
-`include "/mnt/d/Coding/RISCV-CPU/riscv/src/RegFile.v"
-`include "/mnt/d/Coding/RISCV-CPU/riscv/src/ID/dispatcher.v"
-// `include "/mnt/d/Coding/RISCV-CPU/riscv/src/ID/decoder.v"
-`include "/mnt/d/Coding/RISCV-CPU/riscv/src/EXE/ALU.v"
-`include "/mnt/d/Coding/RISCV-CPU/riscv/src/EXE/RS.v"
-`include "/mnt/d/Coding/RISCV-CPU/riscv/src/EXE/LSU.v"
-`include "/mnt/d/Coding/RISCV-CPU/riscv/src/EXE/LSB.v"
+
+// 采用 Makefile 进行编译, 不需要手动 include
+
+// `include "/mnt/d/Coding/RISCV-CPU/riscv/src/IF/fetcher.v"
+// `include "/mnt/d/Coding/RISCV-CPU/riscv/src/IF/predictor.v"
+// `include "/mnt/d/Coding/RISCV-CPU/riscv/src/memCtrl.v"
+// `include "/mnt/d/Coding/RISCV-CPU/riscv/src/RoB.v"
+// `include "/mnt/d/Coding/RISCV-CPU/riscv/src/RegFile.v"
+// `include "/mnt/d/Coding/RISCV-CPU/riscv/src/ID/dispatcher.v"
+// `include "/mnt/d/Coding/RISCV-CPU/riscv/src/EXE/ALU.v"
+// `include "/mnt/d/Coding/RISCV-CPU/riscv/src/EXE/RS.v"
+// `include "/mnt/d/Coding/RISCV-CPU/riscv/src/EXE/LSU.v"
+// `include "/mnt/d/Coding/RISCV-CPU/riscv/src/EXE/LSB.v"
 
 
 module cpu(
@@ -67,7 +69,7 @@ wire [31:0] target_pc_between_fetcher_rob;
 
 // other wires to fetcher
 wire full_from_rs, full_from_lsb, full_from_rob;
-wire global_full = (full_from_rs || full_from_lsb || full_from_rob);
+wire global_full = (full_from_rs || full_from_lsb || full_from_rob) ? 1 : 0;
 
 //---------------------------------------------------------------------dispatcher
 
@@ -212,7 +214,7 @@ memCtrl memCtrl_entity (
     // lsu
     .addr_from_lsu(addr_between_lsu_mem),
     .write_data_from_lsu(data_from_ex_to_mem),
-    .en_from_lsu(en_signal_between_lsu_mem),
+    .en_signal_from_lsu(en_signal_between_lsu_mem),
     .rw_flag_from_lsu(rw_flag_between_lsu_mem),
     .size_from_lsu(size_between_lsu_mem),
     .ok_flag_to_lsu(ok_flag_between_lsu_mem),
@@ -229,9 +231,9 @@ RegFile regFile_entity (
 	.en_signal_from_dispatcher(en_signal_between_dispatcher_reg),
     .rd_from_dispatcher(rd_between_dispatcher_reg),
     .Q_from_dispatcher(Q_between_dispatcher_reg),
+
     .rs1_from_dispatcher(rs1_between_dispatcher_reg),
     .rs2_from_dispatcher(rs2_between_dispatcher_reg),
-
     .V1_to_dispatcher(V1_between_dispatcher_reg),
     .V2_to_dispatcher(V2_between_dispatcher_reg),
     .Q1_to_dispatcher(Q1_between_dispatcher_reg),
@@ -317,6 +319,8 @@ dispatcher dispatcher_entity (
     .is_store_to_rob(is_store_between_dispatcher_rob),
     .predicted_jump_to_rob(predicted_jump_between_dispatcher_rob),
     .pc_to_rob(pc_between_dispatcher_rob),
+
+    .rob_id_from_rob(rob_id_between_dispatcher_rob),
     .rollback_pc_to_rob(rollback_pc_between_dispatcher_rob),
 
     // query V(data) from RoB to speed up
@@ -331,6 +335,7 @@ dispatcher dispatcher_entity (
     // RegFile
     .en_signal_to_reg(en_signal_between_dispatcher_reg),
     .rd_to_reg(rd_between_dispatcher_reg),
+    .Q_to_reg(Q_between_dispatcher_reg),
 
     .rs1_to_reg(rs1_between_dispatcher_reg),
     .rs2_to_reg(rs2_between_dispatcher_reg),
@@ -348,6 +353,7 @@ dispatcher dispatcher_entity (
     .V2_to_rs(V2_between_dispatcher_rs),
     .imm_to_rs(imm_between_dispatcher_rs),
     .pc_to_rs(pc_between_dispatcher_rs),
+    .rob_id_to_rs(rob_id_between_dispatcher_rs),
 
     // LSB
     .en_signal_to_lsb(en_signal_between_dispatcher_lsb),
@@ -357,6 +363,7 @@ dispatcher dispatcher_entity (
     .V1_to_lsb(V1_between_dispatcher_lsb),
     .V2_to_lsb(V2_between_dispatcher_lsb),
     .imm_to_lsb(imm_between_dispatcher_lsb),
+    .rob_id_to_lsb(rob_id_between_dispatcher_lsb),
 
     // ALU
     .valid_from_alu(valid_alu),
@@ -404,7 +411,9 @@ RS rs_entity (
     .rob_id_from_lsu(rob_id_lsu),
 
     // fetcher
-    .full_to_fetcher(full_from_rs)
+    .full_to_fetcher(full_from_rs),
+
+    .rollback_flag_from_rob(rollback_flag_bus)
 );
 
 ALU alu_entity (
@@ -463,7 +472,10 @@ LSB lsb_entity (
 
     .io_rob_id_to_rob(io_rob_id_between_rob_lsb),
 
-    .full_to_fetcher(full_from_lsb)
+    // fetcher
+    .full_to_fetcher(full_from_lsb),
+
+    .rollback_flag_from_rob(rollback_flag_bus)
 );
 
 LSU lsu_entity (
@@ -544,9 +556,9 @@ RoB rob_entity (
     .result_from_lsu(result_lsu),
 
     // lsb
-    .rob_id_to_lsb(rob_id_between_rob_lsb),
-
     .io_rob_id_from_lsb(io_rob_id_between_rob_lsb),
+    .rob_id_to_lsb(rob_id_between_rob_lsb),
+    .head_io_rob_id_to_lsb(head_io_rob_id_between_rob_lsb),
 
     // regFile
     .rd_to_reg(rd_between_rob_reg),

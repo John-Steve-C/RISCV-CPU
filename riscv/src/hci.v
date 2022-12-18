@@ -27,11 +27,11 @@
 
 // modification allowed for debugging purposes
 
-`include "/mnt/d/Coding/RISCV-CPU/riscv/src/common/fifo/fifo.v"
-`include "/mnt/d/Coding/RISCV-CPU/riscv/src/common/uart/uart.v"
-`include "/mnt/d/Coding/RISCV-CPU/riscv/src/common/uart/uart_rx.v"
-`include "/mnt/d/Coding/RISCV-CPU/riscv/src/common/uart/uart_tx.v"
-`include "/mnt/d/Coding/RISCV-CPU/riscv/src/common/uart/uart_baud_clk.v"
+// `include "/mnt/d/Coding/RISCV-CPU/riscv/src/common/fifo/fifo.v"
+// `include "/mnt/d/Coding/RISCV-CPU/riscv/src/common/uart/uart.v"
+// `include "/mnt/d/Coding/RISCV-CPU/riscv/src/common/uart/uart_rx.v"
+// `include "/mnt/d/Coding/RISCV-CPU/riscv/src/common/uart/uart_tx.v"
+// `include "/mnt/d/Coding/RISCV-CPU/riscv/src/common/uart/uart_baud_clk.v"
 
 module hci
 #(

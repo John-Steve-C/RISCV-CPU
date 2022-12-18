@@ -1,3 +1,6 @@
+`include "/mnt/d/Coding/RISCV-CPU/riscv/src/defines.v"
+
+// Reservation Rtation
 module RS(
     input wire clk_in,
   	input wire rst_in,
@@ -12,7 +15,7 @@ module RS(
     input wire [31:0] V2_from_dispatcher,
     input wire [31:0] pc_from_dispatcher,
     input wire [31:0] imm_from_dispatcher,
-    input wire [4:0] rob_id_from_dispatcher,
+    input wire [4:0] rob_id_from_dispatcher,    // real id
 
     // send to ALU
     output reg [5:0] inst_name_to_alu,
@@ -35,7 +38,9 @@ module RS(
     input wire [4:0] rob_id_from_lsu,
 
     // fetcher
-    output wire full_to_fetcher
+    output wire full_to_fetcher,
+    // rob
+    input wire rollback_flag_from_rob
 );
 
 // Reservation Station, a buffer for instruction in EXE
@@ -56,7 +61,7 @@ reg [4:0] rob_id [`RSLen];  // inst destination
 reg [31:0] imm [`RSLen];
 
 // query Q/V again
-// alu -> lsu -> reg 
+// updated by alu -> lsu
 wire [4:0] real_Q1 = (valid_from_alu && Q1_from_dispatcher == rob_id_from_alu) ? 0 : ((valid_from_lsu && Q1_from_dispatcher == rob_id_from_lsu) ? 0 : Q1_from_dispatcher);
 wire [4:0] real_Q2 = (valid_from_alu && Q2_from_dispatcher == rob_id_from_alu) ? 0 : ((valid_from_lsu && Q2_from_dispatcher == rob_id_from_lsu) ? 0 : Q2_from_dispatcher);
 wire [31:0] real_V1 = (valid_from_alu && Q1_from_dispatcher == rob_id_from_alu) ? result_from_alu : ((valid_from_lsu && Q1_from_dispatcher == rob_id_from_lsu) ? result_from_lsu : V1_from_dispatcher);
@@ -90,13 +95,13 @@ assign exe_index = (busy[0] && Q1[0] == 0 && Q2[0] == 0) ? 0 :
                     ((busy[14] && Q1[14] == 0 && Q2[14] == 0) ? 14 :
                     ((busy[15] && Q1[15] == 0 && Q2[15] == 0) ? 15 :
                     RS_SIZE)))))))))))))));  
-// 能执行的就先执行，实现 乱序
+// 能执行的就先执行，实现 '乱序'
 
 always @(posedge clk_in) begin
-    if (rst_in) begin
+    if (rst_in || rollback_flag_from_rob) begin     // remember to clear RS when rollback
         for (i = 0;i < RS_SIZE; i = i + 1) begin
             busy[i] <= 0;
-            inst_name[i] <= 0;  // NOP inst
+            inst_name[i] <= `NOP;
             Q1[i] <= 0;
             Q2[i] <= 0;
             V1[i] <= 0;
@@ -111,7 +116,7 @@ always @(posedge clk_in) begin
     else begin
         // no busy inst
         if (exe_index == RS_SIZE) begin
-            inst_name_to_alu = 0;
+            inst_name_to_alu = `NOP;
         end
         else begin
             // issue(send) the value to alu
@@ -130,7 +135,7 @@ always @(posedge clk_in) begin
             for (i = 0; i < RS_SIZE; i = i + 1) begin
                 if (Q1[i] == rob_id_from_alu) begin
                     V1[i] <= result_from_alu;
-                    Q1[1] <= 0;
+                    Q1[i] <= 0;         // the data(V) is ready
                 end
                 if (Q2[i] == rob_id_from_alu) begin
                     V2[i] <= result_from_alu;
@@ -142,7 +147,7 @@ always @(posedge clk_in) begin
             for (i = 0; i < RS_SIZE; i = i + 1) begin
                 if (Q1[i] == rob_id_from_lsu) begin
                     V1[i] <= result_from_lsu;
-                    Q1[1] <= 0;
+                    Q1[i] <= 0;
                 end
                 if (Q2[i] == rob_id_from_lsu) begin
                     V2[i] <= result_from_lsu;

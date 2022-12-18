@@ -1,5 +1,6 @@
 `include "/mnt/d/Coding/RISCV-CPU/riscv/src/defines.v"
 
+// Load & Store Buffer
 module LSB(
     input wire clk_in,
   	input wire rst_in,
@@ -39,13 +40,14 @@ module LSB(
     input wire commit_flag_from_rob,
     input wire [4:0] rob_id_from_rob,
     input wire [4:0] head_io_rob_id_from_rob,
-    input wire rollback_flag_from_rob,
 
     // specify i/o
     output wire [4:0] io_rob_id_to_rob,
 
     // fetcher
-    output wire full_to_fetcher
+    output wire full_to_fetcher,
+
+    input wire rollback_flag_from_rob
 );
 
 localparam LSB_SIZE = 16;
@@ -73,13 +75,13 @@ wire [31:0] head_addr = V1[head] + imm[head];
 assign io_rob_id_to_rob = (head_addr == `RAM_IO_PORT) ? rob_id[head] : 0;
 
 reg [3:0] element_cnt;
-assign full_to_fetcher = (element_cnt >= LSB_SIZE);
+assign full_to_fetcher = (element_cnt >= LSB_SIZE);     // optimization
 wire [31:0] insert_cnt = en_signal_from_dispatcher ? 1 : 0;
-wire [31:0] issue_cnt = (((busy[head] && busy_from_lsu == 0 && Q1[head] == 0 && Q2[head] == 0) && ((inst_name[head] <= `LHU && (head_addr != `RAM_IO_PORT || head_io_rob_id_from_rob == rob_id[head])) || (is_committed[head]))) ? -1 : 0);
+wire [31:0] issue_cnt = (((busy[head] && !busy_from_lsu && Q1[head] == 0 && Q2[head] == 0) && ((inst_name[head] <= `LHU && (head_addr != `RAM_IO_PORT || head_io_rob_id_from_rob == rob_id[head])) || (is_committed[head]))) ? -1 : 0);
 
 
 // query Q/V again
-// alu -> lsu -> reg 
+// alu -> lsu
 wire [4:0] real_Q1 = (valid_from_alu && Q1_from_dispatcher == rob_id_from_alu) ? 0 : ((valid_from_lsu && Q1_from_dispatcher == rob_id_from_lsu) ? 0 : Q1_from_dispatcher);
 wire [4:0] real_Q2 = (valid_from_alu && Q2_from_dispatcher == rob_id_from_alu) ? 0 : ((valid_from_lsu && Q2_from_dispatcher == rob_id_from_lsu) ? 0 : Q2_from_dispatcher);
 wire [31:0] real_V1 = (valid_from_alu && Q1_from_dispatcher == rob_id_from_alu) ? result_from_alu : ((valid_from_lsu && Q1_from_dispatcher == rob_id_from_lsu) ? result_from_lsu : V1_from_dispatcher);
@@ -113,14 +115,14 @@ always @(posedge clk_in) begin
             tail <= (store_tail == LSB_SIZE - 1) ? 0 : (store_tail + 1);
             element_cnt <= (store_tail > head) ? store_tail - head + 1 : LSB_SIZE - head + store_tail + 1;
             for (i = 0; i < LSB_SIZE; i = i + 1) 
-                if (is_committed[i] == 0 || inst_name[i] <= `LHU) busy[i] <= 0;
+                if (!is_committed[i] || inst_name[i] <= `LHU) busy[i] <= 0;
         end
         else begin
             en_signal_to_lsu <= 0;
             element_cnt <= element_cnt + insert_cnt + issue_cnt;
 
             // execute
-            if (busy[head] && busy_from_lsu == 0 && Q1[head] == 0 && Q2[head] == 0) begin
+            if (busy[head] && !busy_from_lsu && Q1[head] == 0 && Q2[head] == 0) begin
                 // load
                 if (inst_name[head] <= `LHU) begin  
                     if (head_addr != `RAM_IO_PORT || head_io_rob_id_from_rob == rob_id[head]) begin
@@ -160,7 +162,7 @@ always @(posedge clk_in) begin
             // update when commit
             if (commit_flag_from_rob) begin
                 for (i = 0; i < LSB_SIZE; i = i + 1) begin
-                    if (busy[i] && rob_id[i] == rob_id_from_rob && is_committed[i] == 0) begin
+                    if (busy[i] && rob_id[i] == rob_id_from_rob && !is_committed[i]) begin
                         is_committed[i] <= 1;
                         // get store_tail
                         if (inst_name[i] >= `SB) store_tail <= i;

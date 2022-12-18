@@ -17,6 +17,7 @@ module ALU(
 );
 // the EXE of RS
 // can be implemented by non-blocking evaluation? is there any difference?
+// 直接用组合逻辑实现
 
 always @(*) begin
     valid = inst_name == `NOP ? 0 : 1;

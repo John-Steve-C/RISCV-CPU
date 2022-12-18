@@ -66,7 +66,7 @@ always @(posedge clk_in) begin
         // IDLE status
         else begin
             valid <= 0;
-            if (enable_signal == 0 || inst_name == `NOP) en_signal_to_mem <= 0;
+            if (!enable_signal || inst_name == `NOP) en_signal_to_mem <= 0;
             else begin
                 en_signal_to_mem <= 1;
                 case (inst_name)
@@ -91,13 +91,13 @@ always @(posedge clk_in) begin
                     `LBU: begin
                         addr_to_mem <= mem_addr;
                         rw_flag_to_mem <= `READ_FLAG;
-                        size_to_mem <= 2;
+                        size_to_mem <= 1;
                         status <= LBU;
                     end
                     `LHU : begin
                         addr_to_mem <= mem_addr;
                         rw_flag_to_mem <= `READ_FLAG;
-                        size_to_mem <= 4;
+                        size_to_mem <= 2;
                         status <= LHU;
                     end
                     `SB: begin

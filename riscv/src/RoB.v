@@ -1,3 +1,4 @@
+// Re-Order Buffer
 module RoB(
     input wire clk_in,
     input wire rst_in,
@@ -46,9 +47,9 @@ module RoB(
     input wire [31:0] result_from_lsu,
 
     // lsb
-    output reg [4:0] rob_id_to_lsb,
-
     input wire [4:0] io_rob_id_from_lsb,
+    output reg [4:0] rob_id_to_lsb,
+    output wire [4:0] head_io_rob_id_to_lsb,
 
     // regFile
     output reg [4:0] rd_to_reg,
@@ -66,6 +67,8 @@ localparam ROB_SIZE = 16;
 reg [3:0] head, tail, element_cnt;
 wire [3:0] next_head = (head == ROB_SIZE - 1) ? 0 : head + 1, next_tail = (tail == ROB_SIZE - 1) ? 0 : tail + 1;
 
+assign full_to_fetcher = (element_cnt >= ROB_SIZE);
+
 reg [31:0] pc [`ROBLen];
 reg [4:0] rd [`ROBLen];
 reg [31:0] data [`ROBLen];
@@ -74,7 +77,7 @@ reg [31:0] rollback_pc [`ROBLen];
 
 reg busy [`ROBLen];  // 当前位置是否被占用（有尚未提交的指令）
 reg ready [`ROBLen]; // 当前指令是否执行完毕
-reg [3:0] state [`ROBLen];  // 
+// reg [3:0] state [`ROBLen];  
 reg is_jump [`ROBLen];  // 指令为 jump 类
 reg jump_flag[`ROBLen]; // jump 指令是否跳转
 reg is_store [`ROBLen]; // 指令为 store
@@ -91,7 +94,8 @@ assign Q2_ready_to_dispatcher = (Q2_from_dispatcher == 0) ? 0 : ready[Q2_from_di
 assign data1_to_dispatcher = (Q1_from_dispatcher == 0) ? 0 : data[Q1_from_dispatcher - 1];
 assign data2_to_dispatcher = (Q2_from_dispatcher == 0) ? 0 : data[Q2_from_dispatcher - 1];
 
-assign rob_id_to_dispatcher = tail + 1;
+assign rob_id_to_dispatcher = tail + 1; // rob_id = 0 stands for it's ready
+assign head_io_rob_id_to_lsb = (busy[head] && is_io[head]) ? head + 1 : 0;
 
 integer i;
 
@@ -100,18 +104,20 @@ always @(posedge clk_in) begin
         element_cnt <= 0;
         head <= 0;
         tail <= 0;
-        for (i = 0; i < 16; i = i + 1) begin
+        for (i = 0; i < ROB_SIZE; i = i + 1) begin
             pc[i] <= 0;
             rd[i] <= 0;
             data[i] <= 0;
             target_pc[i] <= 0;
             rollback_pc[i] <= 0;
+
             busy[i] <= 0;
             ready[i] <= 0;
-            state[i] <= 0;
             is_jump[i] <= 0;
             jump_flag[i] <= 0;
             is_store[i] <= 0;
+            is_io[i] <= 0;
+            predicted_jump[i] <= 0;
         end
         commit_flag <= 0;
         rollback_flag <= 0;
@@ -131,7 +137,7 @@ always @(posedge clk_in) begin
             // until current inst isn't busy/ready
             commit_flag <= 1;
             rd_to_reg <= rd[head];
-            Q_to_reg <= head + 1;   // head
+            Q_to_reg <= head + 1;   // prevent (id=0)
             V_to_reg <= data[head];
             
             rob_id_to_lsb <= head + 1;

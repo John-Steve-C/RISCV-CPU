@@ -7,7 +7,7 @@ sim_testcase = $(prefix)/testcase/sim
 fpga_testcase = $(prefix)/testcase/fpga
 
 sim = $(prefix)/sim
-riscv_toolchain = /opt/riscv
+riscv_toolchain = /mnt/d/Coding/RISCV-CPU/riscv-tool
 riscv_bin = $(riscv_toolchain)/bin
 sys = $(prefix)/sys
 
@@ -16,8 +16,9 @@ _no_testcase_name_check:
 	@$(if $(strip $(name)),, exit 1)
 
 # All build result are put at testspace
+# no need to use include
 build_sim:
-	@cd $(src) && iverilog -o $(testspace)/test $(sim)/testbench.v $(src)/common/block_ram/*.v $(src)/common/fifo/*.v $(src)/common/uart/*.v $(src)/*.vh $(src)/*.v
+	@cd $(src) && iverilog -o $(testspace)/test $(sim)/testbench.v $(src)/common/block_ram/*.v $(src)/common/fifo/*.v $(src)/common/uart/*.v $(src)/*.v $(src)/IF/*.v $(src)/ID/*.v $(src)/EXE/*.v
 
 build_sim_test: _no_testcase_name_check
 	@$(riscv_bin)/riscv32-unknown-elf-as -o $(sys)/rom.o -march=rv32i $(sys)/rom.s

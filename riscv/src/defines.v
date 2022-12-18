@@ -48,5 +48,5 @@
 `define RAM_IO_PORT 32'h30000
 
 // r/w flag for memory
-`define WRITE_FLAG  1'b0
-`define READ_FLAG   1'b1
+`define READ_FLAG   1'b0
+`define WRITE_FLAG  1'b1
