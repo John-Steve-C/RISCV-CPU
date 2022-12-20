@@ -32,7 +32,7 @@ module memCtrl (
 
 // mem status
 localparam IDLE = 0, FETCH = 1, LOAD = 2, STORE = 3;
-reg [1:0] status;
+reg [2:0] status;
 reg [31:0] ram_access_counter, ram_access_stop; // ram_access_counter = 0 ~ stop (byte size)
 reg [31:0] ram_access_pc, writing_data;
 
@@ -66,8 +66,8 @@ always @(posedge clk_in) begin
         uart_write_lock <= 0;
     end
     else if (!rdy_in) begin
-        ok_flag_to_fetcher <= 0;
-        ok_flag_to_lsu <= 0;
+        // ok_flag_to_fetcher <= 0;
+        // ok_flag_to_lsu <= 0;
     end
     else begin
         // cope with drop situation
@@ -179,7 +179,7 @@ always @(posedge clk_in) begin
                 addr_to_ram <= (ram_access_counter >= ram_access_stop - 1) ? 0 : addr_to_ram + 1;
                 rw_flag_to_ram <= `READ_FLAG;
                 case (ram_access_counter)
-                    1: inst_to_fetcher[7:0] <= data_from_ram;      // 保证 inst_to_fetcher 落后 data_to_ram 一个 cycle
+                    1: inst_to_fetcher[7:0] <= data_from_ram;      // 保证 inst_to_fetcher 落后 data_from_ram 一个 cycle
                     2: inst_to_fetcher[15:8] <= data_from_ram;
                     3: inst_to_fetcher[23:16] <= data_from_ram;
                     4: inst_to_fetcher[31:24] <= data_from_ram;

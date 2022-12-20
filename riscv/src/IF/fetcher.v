@@ -90,7 +90,6 @@ always @(posedge clk_in) begin
 			status <= IDLE;
 			en_signal_to_mem <= 0;
 			drop_flag_to_mem <= 1;
-			ok_flag_to_dispatcher <= 0;
 		end 
 		else begin 
 			if (hit && !global_full) begin

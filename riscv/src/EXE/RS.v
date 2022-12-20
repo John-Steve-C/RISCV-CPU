@@ -49,7 +49,7 @@ localparam RS_SIZE = 16;
 `define RSLen RS_SIZE - 1 : 0
 
 // RS Node
-reg busy [`RSLen];
+reg [`RSLen] busy;
 reg [5:0] inst_name [`RSLen];
 reg [4:0] Q1 [`RSLen];
 reg [4:0] Q2 [`RSLen];
@@ -159,6 +159,7 @@ always @(posedge clk_in) begin
         // insert
         if (en_signal_from_dispatcher && empty_index != RS_SIZE) begin
             busy[empty_index] <= 1;
+            inst_name[empty_index] <= inst_name_from_dispatcher;
             Q1[empty_index] <= real_Q1;
             Q2[empty_index] <= real_Q2;
             V1[empty_index] <= real_V1;

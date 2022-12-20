@@ -30,7 +30,7 @@ end
 initial begin
      $dumpfile("test.vcd");
      $dumpvars(0, testbench);
-     #3000 $finish;
+     #30000 $finish;         // 设置强制结束时间，默认为 300000000
 end
 
 endmodule

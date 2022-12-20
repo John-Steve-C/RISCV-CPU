@@ -88,6 +88,19 @@ wire [31:0] real_V1 = (valid_from_alu && Q1_from_dispatcher == rob_id_from_alu) 
 wire [31:0] real_V2 = (valid_from_alu && Q2_from_dispatcher == rob_id_from_alu) ? result_from_alu : ((valid_from_lsu && Q2_from_dispatcher == rob_id_from_lsu) ? result_from_lsu : V2_from_dispatcher);
 
 
+// for debug
+integer debug_is_commit_now = -1;
+assign debug_V1_head = V1[head];
+assign debug_V2_head = V2[head];
+assign debug_V1_tail = V1[tail];
+assign debug_V2_tail = V2[tail];
+assign debug_Q1_head = Q1[head];
+assign debug_Q2_head = Q2[head];
+assign debug_Q1_tail = Q1[tail];
+assign debug_Q2_head = Q2[tail];
+assign debug_imm_head = imm[head];
+assign debug_imm_tail = imm[tail];
+
 always @(posedge clk_in) begin
     if (rst_in || (rollback_flag_from_rob && store_tail == LSB_SIZE)) begin
         // store_tail 越界 & rollback_flag
@@ -151,10 +164,10 @@ always @(posedge clk_in) begin
                         store_value_to_lsu <= V2[head];
                         rob_id_to_exe <= rob_id[head];
 
-                        head <= next_head;
                         // store_tail is invalid
                         // it's an empty queue for store
                         if (head == store_tail) store_tail <= LSB_SIZE;
+                        head <= next_head;
                     end
                 end
             end

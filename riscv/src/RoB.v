@@ -67,7 +67,7 @@ localparam ROB_SIZE = 16;
 reg [3:0] head, tail, element_cnt;
 wire [3:0] next_head = (head == ROB_SIZE - 1) ? 0 : head + 1, next_tail = (tail == ROB_SIZE - 1) ? 0 : tail + 1;
 
-assign full_to_fetcher = (element_cnt >= ROB_SIZE);
+assign full_to_fetcher = (element_cnt >= ROB_SIZE);     // need to return signal before real full ?
 
 reg [31:0] pc [`ROBLen];
 reg [4:0] rd [`ROBLen];
@@ -75,21 +75,23 @@ reg [31:0] data [`ROBLen];
 reg [31:0] target_pc [`ROBLen];
 reg [31:0] rollback_pc [`ROBLen];
 
-reg busy [`ROBLen];  // 当前位置是否被占用（有尚未提交的指令）
-reg ready [`ROBLen]; // 当前指令是否执行完毕
+// busy[]（数组） 与 []busy（多位数） 操作上等效，但是前者可以在波形图中显示
+reg [`ROBLen] busy;  // 当前位置是否被占用（有尚未提交的指令）
+reg [`ROBLen] ready; // 当前指令是否执行完毕
 // reg [3:0] state [`ROBLen];  
-reg is_jump [`ROBLen];  // 指令为 jump 类
-reg jump_flag[`ROBLen]; // jump 指令是否跳转
-reg is_store [`ROBLen]; // 指令为 store
-reg is_io [`ROBLen];
-reg predicted_jump[`ROBLen];
+reg [`ROBLen] is_jump;  // 指令为 jump 类
+reg [`ROBLen] jump_flag; // jump 指令是否跳转
+reg [`ROBLen] is_store; // 指令为 store
+reg [`ROBLen] is_io;
+reg [`ROBLen] predicted_jump;
 
 // use to update the element_cnt of RoB
 wire [31:0] insert_cnt = en_signal_from_dispatcher ? 1 : 0;
 wire [31:0] commit_cnt = (busy[head] && (ready[head] || is_store[head])) ? -1 : 0;
 
-// the queue starts at index 0.
-assign Q1_ready_to_dispatcher = (Q1_from_dispatcher == 0) ? 0 : ready[Q1_from_dispatcher - 1];
+// the queue starts at index 0(stands for ready), but only store in 1..16
+// if Q is ready in dispatcher, then get it from dispatcher, else get from rob
+assign Q1_ready_to_dispatcher = (Q1_from_dispatcher == 0) ? 0 : ready[Q1_from_dispatcher - 1];  
 assign Q2_ready_to_dispatcher = (Q2_from_dispatcher == 0) ? 0 : ready[Q2_from_dispatcher - 1];
 assign data1_to_dispatcher = (Q1_from_dispatcher == 0) ? 0 : data[Q1_from_dispatcher - 1];
 assign data2_to_dispatcher = (Q2_from_dispatcher == 0) ? 0 : data[Q2_from_dispatcher - 1];
