@@ -60,14 +60,14 @@ wire [4:0] next_head = (head == LSB_SIZE - 1) ? 0 : head + 1, next_tail = (tail 
 integer i;
 
 // LSB Node
-reg busy [`LSBLen];
+reg [`LSBLen] busy;
 reg [5:0] inst_name [`LSBLen];
 reg [4:0] Q1 [`LSBLen];
 reg [4:0] Q2 [`LSBLen];
 reg [31:0] V1 [`LSBLen];
 reg [31:0] V2 [`LSBLen];
 reg [4:0] rob_id [`LSBLen];  // inst destination
-reg is_committed [`LSBLen];
+reg [`LSBLen] is_committed;
 
 reg [31:0] imm [`LSBLen];
 
@@ -75,7 +75,7 @@ wire [31:0] head_addr = V1[head] + imm[head];
 assign io_rob_id_to_rob = (head_addr == `RAM_IO_PORT) ? rob_id[head] : 0;
 
 reg [3:0] element_cnt;
-assign full_to_fetcher = (element_cnt >= LSB_SIZE);     // optimization
+assign full_to_fetcher = (element_cnt >= LSB_SIZE - `FULL_WARNING);     // optimization
 wire [31:0] insert_cnt = en_signal_from_dispatcher ? 1 : 0;
 wire [31:0] issue_cnt = (((busy[head] && !busy_from_lsu && Q1[head] == 0 && Q2[head] == 0) && ((inst_name[head] <= `LHU && (head_addr != `RAM_IO_PORT || head_io_rob_id_from_rob == rob_id[head])) || (is_committed[head]))) ? -1 : 0);
 

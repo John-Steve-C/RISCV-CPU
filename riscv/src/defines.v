@@ -50,3 +50,5 @@
 // r/w flag for memory
 `define READ_FLAG   1'b0
 `define WRITE_FLAG  1'b1
+
+`define FULL_WARNING 3'd6

@@ -46,8 +46,24 @@ reg [31:0] buffer_addr, buffer_write_data;
 // prevent write data to hci when I/O buffer is full
 reg uart_write_is_io, uart_write_lock;
 
-// used for debugging
-wire [1:0] debug_status = status;
+// cope with drop situation
+// change status when get drop_flag_from_fetcher
+reg status_drop_flag, fetch_valid_drop_flag, ls_valid_drop_flag;
+wire [2:0] real_status = status_drop_flag ? IDLE : status;
+wire real_buffer_fetch_valid = fetch_valid_drop_flag ? 0 : buffer_fetch_valid;
+wire real_buffer_ls_valid = ls_valid_drop_flag ? 0 : buffer_ls_valid;
+
+always @(*) begin
+    status_drop_flag = 0;
+    fetch_valid_drop_flag = 0;
+    ls_valid_drop_flag = 0;
+
+    if (drop_flag_from_fetcher) begin
+        if (status == FETCH || status == LOAD) status_drop_flag = 1;
+        fetch_valid_drop_flag = 1;
+        if (buffer_ls_valid && buffer_rw_flag == `READ_FLAG) ls_valid_drop_flag = 1;
+    end
+end
 
 
 always @(posedge clk_in) begin
@@ -71,12 +87,15 @@ always @(posedge clk_in) begin
     end
     else begin
         // cope with drop situation
-        if (drop_flag_from_fetcher) begin
-            // fetch failed, update the status
-            if (status == FETCH || status == LOAD) status <= IDLE;
-            buffer_fetch_valid <= 0;
-            if (buffer_ls_valid && buffer_rw_flag == `READ_FLAG) buffer_ls_valid <= 0;
-        end
+        // if (drop_flag_from_fetcher) begin
+        //     // fetch failed, update the status
+        //     if (status == FETCH || status == LOAD) status <= IDLE;
+        //     buffer_fetch_valid <= 0;
+        //     if (buffer_ls_valid && buffer_rw_flag == `READ_FLAG) buffer_ls_valid <= 0;
+        // end
+        if (status_drop_flag) status <= IDLE;
+        if (fetch_valid_drop_flag) buffer_fetch_valid <= 0;
+        if (ls_valid_drop_flag) buffer_ls_valid <= 0;
 
         // ok_flag_to_fetcher <= 0;
         // ok_flag_to_lsu <= 0;
@@ -84,7 +103,7 @@ always @(posedge clk_in) begin
         // rw_flag_to_ram <= `READ_FLAG;    // set default value
 
         // busy mem, put query into r/w buffer
-        if (status != IDLE || (en_signal_from_fetcher && en_signal_from_lsu)) begin
+        if (real_status != IDLE || (en_signal_from_fetcher && en_signal_from_lsu)) begin
             // load/store instruction
             if (!en_signal_from_fetcher && en_signal_from_lsu) begin
                 buffer_ls_valid <= 1;
@@ -101,7 +120,7 @@ always @(posedge clk_in) begin
         end
 
         // IDLE mem, then update the status
-        if (status == IDLE) begin
+        if (real_status == IDLE) begin
             ok_flag_to_fetcher <= 0;
             ok_flag_to_lsu <= 0;
             inst_to_fetcher <= 0;
@@ -113,8 +132,8 @@ always @(posedge clk_in) begin
                     ram_access_counter <= 0;
                     ram_access_stop <= size_from_lsu;
                     writing_data <= write_data_from_lsu;
-                    addr_to_ram <= addr_from_lsu;
-                    // ram_access_pc <= addr_from_lsu;
+                    addr_to_ram <= 0;       // 0 to prevent writing ahead
+                    ram_access_pc <= addr_from_lsu;
                     rw_flag_to_ram <= `WRITE_FLAG;
 
                     uart_write_is_io <= (addr_from_lsu == `RAM_IO_PORT);
@@ -126,19 +145,19 @@ always @(posedge clk_in) begin
                     ram_access_counter <= 0;
                     ram_access_stop <= size_from_lsu;
                     addr_to_ram <= addr_from_lsu;
-                    // ram_access_pc <= addr_from_lsu + 1; // prevent miss
+                    ram_access_pc <= addr_from_lsu + 1; // prevent miss
                     rw_flag_to_ram <= `READ_FLAG;
 
                     status <= LOAD;
                 end
             end
-            else if (buffer_ls_valid) begin     // there are buffered requests
+            else if (real_buffer_ls_valid) begin     // there are buffered requests
                 if (buffer_rw_flag == `WRITE_FLAG) begin
                     ram_access_counter <= 0;
                     ram_access_stop <= buffer_query_size;
                     writing_data <= buffer_write_data;
-                    addr_to_ram <= buffer_addr;
-                    // ram_access_pc <= buffer_addr;
+                    addr_to_ram <= 0;
+                    ram_access_pc <= buffer_addr;
                     rw_flag_to_ram <= `WRITE_FLAG;
                     status <= STORE;                
                 end
@@ -146,7 +165,7 @@ always @(posedge clk_in) begin
                     ram_access_counter <= 0;
                     ram_access_stop <= buffer_query_size;
                     addr_to_ram <= buffer_addr;
-                    // ram_access_pc <= buffer_addr + 1; //
+                    ram_access_pc <= buffer_addr + 1; //
                     rw_flag_to_ram <= `READ_FLAG;
                     status <= LOAD;
                 end
@@ -157,15 +176,15 @@ always @(posedge clk_in) begin
                 ram_access_counter <= 0;
                 ram_access_stop <= 4;   // fetch a 4-byte inst [31:0]
                 addr_to_ram <= pc_from_fetcher;
-                // ram_access_pc <= pc_from_fetcher + 1;
+                ram_access_pc <= pc_from_fetcher + 1;
                 rw_flag_to_ram <= `READ_FLAG;
                 status <= FETCH;
             end
-            else if (buffer_fetch_valid) begin
+            else if (real_buffer_fetch_valid) begin
                 ram_access_counter <= 0;
                 ram_access_stop <= 4;
                 addr_to_ram <= buffer_pc;
-                // ram_access_pc <= buffer_pc + 1;
+                ram_access_pc <= buffer_pc + 1;
                 rw_flag_to_ram <= `READ_FLAG;
                 status <= FETCH;
                 buffer_fetch_valid <= 0;
@@ -173,10 +192,10 @@ always @(posedge clk_in) begin
         end
 
         // busy, check the illegal status, and then work
-        else if (!(uart_full_from_ram && status == STORE)) begin
+        else if (!(uart_full_from_ram && real_status == STORE)) begin
             // work fetch
-            if (status == FETCH) begin
-                addr_to_ram <= (ram_access_counter >= ram_access_stop - 1) ? 0 : addr_to_ram + 1;
+            if (real_status == FETCH) begin
+                addr_to_ram <= ram_access_pc;
                 rw_flag_to_ram <= `READ_FLAG;
                 case (ram_access_counter)
                     1: inst_to_fetcher[7:0] <= data_from_ram;      // 保证 inst_to_fetcher 落后 data_from_ram 一个 cycle
@@ -184,7 +203,7 @@ always @(posedge clk_in) begin
                     3: inst_to_fetcher[23:16] <= data_from_ram;
                     4: inst_to_fetcher[31:24] <= data_from_ram;
                 endcase
-                // ram_access_pc <= (ram_access_counter >= ram_access_stop - 1) ? 0 : ram_access_pc + 1;    // get new pc
+                ram_access_pc <= (ram_access_counter >= ram_access_stop - 1) ? 0 : ram_access_pc + 1;    // get new pc
                 if (ram_access_counter == ram_access_stop) begin
                     // completed and stop
                     ok_flag_to_fetcher <= !drop_flag_from_fetcher;
@@ -198,8 +217,8 @@ always @(posedge clk_in) begin
             end
 
             // load
-            else if (status == LOAD) begin
-                addr_to_ram <= (ram_access_counter >= ram_access_stop - 1) ? 0 : addr_to_ram + 1;
+            else if (real_status == LOAD) begin
+                addr_to_ram <= ram_access_pc;
                 rw_flag_to_ram <= `READ_FLAG;
                 case (ram_access_counter)
                     1: load_data_to_lsu[7:0] <= data_from_ram;  // 同理 保证落后
@@ -207,7 +226,7 @@ always @(posedge clk_in) begin
                     3: load_data_to_lsu[23:16] <= data_from_ram;
                     4: load_data_to_lsu[31:24] <= data_from_ram;
                 endcase
-                // ram_access_pc <= (ram_access_counter >= ram_access_stop - 1) ? 0 : ram_access_pc + 1;
+                ram_access_pc <= (ram_access_counter >= ram_access_stop - 1) ? 0 : ram_access_pc + 1;
                 if (ram_access_counter == ram_access_stop) begin
                     ok_flag_to_lsu <= !drop_flag_from_fetcher;
                     status <= IDLE;
@@ -220,12 +239,12 @@ always @(posedge clk_in) begin
             end
             
             // store
-            else if (status == STORE) begin
+            else if (real_status == STORE) begin
                 if (!uart_write_is_io || !uart_write_lock) begin
                     // uart is full, lock 1 cycle
                     uart_write_lock <= 1;
                     
-                    addr_to_ram <= (ram_access_counter >= ram_access_stop - 1) ? 0 : addr_to_ram + 1;
+                    addr_to_ram <= ram_access_pc;
                     rw_flag_to_ram <= `WRITE_FLAG;
                     case (ram_access_counter) 
                         0: data_to_ram <= writing_data[7:0];    // 写入时不需要落后以读取数据
@@ -233,7 +252,7 @@ always @(posedge clk_in) begin
                         2: data_to_ram <= writing_data[23:16];
                         3: data_to_ram <= writing_data[31:24];
                     endcase
-                    // ram_access_pc <= (ram_access_counter >= ram_access_stop - 1) ? 0 : ram_access_pc + 1;
+                    ram_access_pc <= (ram_access_counter >= ram_access_stop - 1) ? 0 : ram_access_pc + 1;
                     if (ram_access_counter == ram_access_stop) begin
                         ok_flag_to_lsu <= 1;
                         status <= IDLE;

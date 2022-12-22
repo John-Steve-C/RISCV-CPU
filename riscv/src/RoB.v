@@ -1,3 +1,5 @@
+`include "/mnt/d/Coding/RISCV-CPU/riscv/src/defines.v"
+
 // Re-Order Buffer
 module RoB(
     input wire clk_in,
@@ -67,7 +69,7 @@ localparam ROB_SIZE = 16;
 reg [3:0] head, tail, element_cnt;
 wire [3:0] next_head = (head == ROB_SIZE - 1) ? 0 : head + 1, next_tail = (tail == ROB_SIZE - 1) ? 0 : tail + 1;
 
-assign full_to_fetcher = (element_cnt >= ROB_SIZE);     // need to return signal before real full ?
+assign full_to_fetcher = (element_cnt >= ROB_SIZE - `FULL_WARNING);     // need to return signal before real full ?
 
 reg [31:0] pc [`ROBLen];
 reg [4:0] rd [`ROBLen];
@@ -200,6 +202,8 @@ always @(posedge clk_in) begin
             tail <= next_tail;
         end
     end
+
+    // $display("%d %d\n", target_pc_to_fetcher, pc_from_dispatcher);
 end
 
 endmodule

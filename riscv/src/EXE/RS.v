@@ -71,7 +71,7 @@ integer i;
 wire [4:0] empty_index;   // 压位成一个表示状态的5位二进制数
 wire [4:0] exe_index;
 // if index == RS_SIZE, then it's invalid
-assign full_to_fetcher = (empty_index == RS_SIZE);
+assign full_to_fetcher = (empty_index == RS_SIZE - `FULL_WARNING);
 
 assign empty_index = ~busy[0] ? 0 : (~busy[1] ? 1 : (~busy[2] ? 2 : (~busy[3] ? 3 :
                     (~busy[4] ? 4 : (~busy[5] ? 5 : (~busy[6] ? 6 : (~busy[7] ? 7 :

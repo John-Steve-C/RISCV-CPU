@@ -36,7 +36,7 @@ integer i;
 
 localparam IDLE = 0, FETCH = 1;		// status
 
-reg [31:0] pc, mem_pc;
+reg [31:0] pc, mem_pc;	// mem_pc cope with icache and memory
 reg status;
 
 // INDEX/TAG RANGE is based on memory (pc)

@@ -90,7 +90,9 @@ initial begin
   for (i=0;i<2**ADDR_WIDTH;i=i+1) begin
     ram[i] = 0;
   end
-  $readmemh("/mnt/d/Coding/RISCV-CPU/riscv/test/test.data", ram); // add test.data to vivado project or specify a valid file path
+  $readmemh("/mnt/d/Coding/RISCV-CPU/riscv/testspace/test.data", ram); // add test.data to vivado project or specify a valid file path
+  // you can modify the input on your own
+  // this is used for Makefile test
 end
 
 endmodule
