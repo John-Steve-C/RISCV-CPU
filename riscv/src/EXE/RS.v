@@ -1,4 +1,7 @@
-`include "/mnt/d/Coding/RISCV-CPU/riscv/src/defines.v"
+// `include "/mnt/d/Coding/RISCV-CPU/riscv/src/defines.v"
+`include "../src/defines.v"
+
+// `include "D:/Coding/RISCV-CPU/riscv/src/defines.v"
 
 // Reservation Rtation
 module RS(
@@ -51,12 +54,12 @@ localparam RS_SIZE = 16;
 // RS Node
 reg [`RSLen] busy;
 reg [5:0] inst_name [`RSLen];
-reg [4:0] Q1 [`RSLen];
+reg [4:0] Q1 [`RSLen];      // V1 will be updated by the Q1 inst in RoB
 reg [4:0] Q2 [`RSLen];
-reg [31:0] V1 [`RSLen];
+reg [31:0] V1 [`RSLen];     // rs1 data
 reg [31:0] V2 [`RSLen];
 reg [31:0] pc [`RSLen];
-reg [4:0] rob_id [`RSLen];  // inst destination
+reg [4:0] rob_id [`RSLen];  // currnet inst's id in RoB
 
 reg [31:0] imm [`RSLen];
 

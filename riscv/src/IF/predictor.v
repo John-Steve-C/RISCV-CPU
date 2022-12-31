@@ -20,7 +20,7 @@ localparam STRONG_NOT = 0, WEAK_NOT = 1, WEAK_JUMP = 2, STRONG_JUMP = 3;
 localparam BHT_SIZE = 256;
 localparam JAL_TYPE = 7'b1101111, BR_TYPE = 7'b1100011;
 
-wire [9:2] cut_pc = pc_from_rob [9:2];   // pc += 4 (100 in binary) , so pc[1:0] is always 0
+wire [9:2] cut_pc = pc_from_rob [9:2];   // pc += 4 (100 in binary) , so pc[1:0] is always 0, use [9:2] as identifier
 reg [1:0] predict_table [BHT_SIZE - 1 : 0];   // 256 = 1 << 8
 
 wire [31:0] J_inst_imm = {{12{query_inst[31]}}, query_inst[19:12], query_inst[20], query_inst[30:21], 1'b0};

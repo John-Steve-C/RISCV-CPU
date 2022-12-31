@@ -1,4 +1,7 @@
-`include "/mnt/d/Coding/RISCV-CPU/riscv/src/defines.v"
+// `include "/mnt/d/Coding/RISCV-CPU/riscv/src/defines.v"
+`include "../src/defines.v"
+
+// `include "D:/Coding/RISCV-CPU/riscv/src/defines.v"
 
 module LSU(
     input wire clk_in,

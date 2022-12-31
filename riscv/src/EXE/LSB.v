@@ -1,4 +1,7 @@
-`include "/mnt/d/Coding/RISCV-CPU/riscv/src/defines.v"
+// `include "/mnt/d/Coding/RISCV-CPU/riscv/src/defines.v"
+`include "../src/defines.v"
+
+// `include "D:/Coding/RISCV-CPU/riscv/src/defines.v"
 
 // Load & Store Buffer
 module LSB(
@@ -71,7 +74,7 @@ reg [`LSBLen] is_committed;
 
 reg [31:0] imm [`LSBLen];
 
-wire [31:0] head_addr = V1[head] + imm[head];
+wire [31:0] head_addr = V1[head] + imm[head];   // 提前计算 ls指令的目标地址
 assign io_rob_id_to_rob = (head_addr == `RAM_IO_PORT) ? rob_id[head] : 0;
 
 reg [3:0] element_cnt;

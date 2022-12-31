@@ -1,5 +1,9 @@
 // `include "/mnt/d/Coding/RISCV-CPU/riscv/src/ID/decoder.v"
-`include "/mnt/d/Coding/RISCV-CPU/riscv/src/defines.v"
+
+// `include "/mnt/d/Coding/RISCV-CPU/riscv/src/defines.v"
+`include "../src/defines.v"     // 似乎 vscode 的插件无法识别相对路径?
+
+// `include "D:/Coding/RISCV-CPU/riscv/src/defines.v"
 
 // transfer the data and signals
 module dispatcher (

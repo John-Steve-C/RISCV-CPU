@@ -3,6 +3,7 @@ riscv/testcases_with_dump
 riscv/test
 
 riscv-tool
+serial/
 
 *.o
 *.vcd
