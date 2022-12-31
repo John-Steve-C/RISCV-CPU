@@ -1,5 +1,5 @@
 // `include "/mnt/d/Coding/RISCV-CPU/riscv/src/defines.v"
-`include "../src/defines.v"
+`include "defines.v"
 
 // `include "D:/Coding/RISCV-CPU/riscv/src/defines.v"
 
