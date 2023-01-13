@@ -129,7 +129,8 @@ always @(posedge clk_in) begin
             inst_to_fetcher <= 0;
             load_data_to_lsu <= 0;
 
-            // cope with lsu inst
+            // cope with lsu inst first
+            // that is to say, if we need to get data&inst at the same time, data first
             if (en_signal_from_lsu) begin
                 if (rw_flag_from_lsu == `WRITE_FLAG) begin
                     ram_access_counter <= 0;

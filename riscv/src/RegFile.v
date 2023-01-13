@@ -39,7 +39,7 @@ reg [4:0] shadow_Q_from_dispatcher, shadow_rd_from_dispatcher, shadow_rd_from_ro
 reg [31:0] shadow_V_from_rob;
 
 assign Q1_to_dispatcher = (shadow_rd_from_rob == rs1_from_dispatcher && shadow_commit_Q) ? 0 :	// [Q] has been committed
-						  ((shadow_rd_from_dispatcher == rs1_from_dispatcher) ? shadow_Q_from_dispatcher :	// accept Q change from dispatcher
+						  ((shadow_rd_from_dispatcher == rs1_from_dispatcher) ? shadow_Q_from_dispatcher :	// accept Q change from dispatcher, it means rd=rs1, so get new Q of rs1 as same as rd
 						  (shadow_jump_flag_from_rob ? 0 : Q[rs1_from_dispatcher]));		// jump flag from rob
 assign Q2_to_dispatcher = (shadow_rd_from_rob == rs2_from_dispatcher && shadow_commit_Q) ? 0 :
 						  ((shadow_rd_from_dispatcher == rs2_from_dispatcher) ? shadow_Q_from_dispatcher :
@@ -66,9 +66,10 @@ always @(*) begin
             shadow_rd_from_rob = rd_from_rob; 
             shadow_V_from_rob = V_from_rob;
             if (en_signal_from_dispatcher && (rd_from_rob == rd_from_dispatcher)) begin
-                if (shadow_Q_from_dispatcher == Q_from_rob) shadow_commit_Q = 1;
+                // if (shadow_Q_from_dispatcher == Q_from_rob) shadow_commit_Q = 1;
             end
             else if (Q[rd_from_rob] == Q_from_rob) shadow_commit_Q = 1;
+            // Q[rd_from_rob] : 上一条指令的 rd
         end
     end
 end

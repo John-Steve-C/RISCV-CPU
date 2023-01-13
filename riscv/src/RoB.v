@@ -72,7 +72,7 @@ localparam ROB_SIZE = 16;
 reg [3:0] head, tail, element_cnt;
 wire [3:0] next_head = (head == ROB_SIZE - 1) ? 0 : head + 1, next_tail = (tail == ROB_SIZE - 1) ? 0 : tail + 1;
 
-assign full_to_fetcher = (element_cnt >= ROB_SIZE - `FULL_WARNING);     // need to return signal before real full ?
+assign full_to_fetcher = (element_cnt >= ROB_SIZE - `FULL_WARNING);     // need to return signal before real full
 
 reg [31:0] pc [`ROBLen];
 reg [4:0] rd [`ROBLen];
@@ -102,7 +102,7 @@ assign data1_to_dispatcher = (Q1_from_dispatcher == 0) ? 0 : data[Q1_from_dispat
 assign data2_to_dispatcher = (Q2_from_dispatcher == 0) ? 0 : data[Q2_from_dispatcher - 1];
 
 assign rob_id_to_dispatcher = tail + 1; // rob_id = 0 stands for it's ready
-assign head_io_rob_id_to_lsb = (busy[head] && is_io[head]) ? head + 1 : 0;
+assign head_io_rob_id_to_lsb = (busy[head] && is_io[head]) ? head + 1 : 0;  // 判断head是否为io指令
 
 integer i;
 
@@ -183,7 +183,7 @@ always @(posedge clk_in) begin
             data[rob_id_from_lsu - 1] <= result_from_lsu;
         end
 
-        // commit directly
+        // commit directly, get the i/o info back from lsb
         if (io_rob_id_from_lsb != 0 && busy[io_rob_id_from_lsb - 1]) is_io[io_rob_id_from_lsb - 1] <= 1;
 
         // insert
@@ -191,7 +191,7 @@ always @(posedge clk_in) begin
             busy[tail] <= 1;
             is_io[tail] <= 0;
             predicted_jump[tail] <= predicted_jump_from_dispatcher;
-            pc[tail] <=  pc_from_dispatcher;
+            pc[tail] <= pc_from_dispatcher;
             rd[tail] <= rd_from_dispatcher;
 
             data[tail] <= 0;

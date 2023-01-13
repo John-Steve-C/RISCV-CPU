@@ -111,6 +111,7 @@ assign rob_id_to_lsb = rob_id_from_rob;
 
 // get real(newest) Q and V
 // query V in ALU/LSU first, then RoB, last Reg
+// actually perform data forwarding
 wire [4:0] real_Q1 = (valid_from_alu && Q1_from_reg == rob_id_from_alu) ? 0 : ((valid_from_lsu && Q1_from_reg == rob_id_from_lsu) ? 0 : (Q1_ready_from_rob ? 0 : Q1_from_reg));
 wire [4:0] real_Q2 = (valid_from_alu && Q2_from_reg == rob_id_from_alu) ? 0 : ((valid_from_lsu && Q2_from_reg == rob_id_from_lsu) ? 0 :(Q2_ready_from_rob ? 0 : Q2_from_reg));
 wire [31:0] real_V1 = (valid_from_alu && Q1_from_reg == rob_id_from_alu) ? result_from_alu : ((valid_from_lsu && Q1_from_reg == rob_id_from_lsu) ? result_from_lsu :(Q1_ready_from_rob ? data1_from_rob : V1_from_reg));

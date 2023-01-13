@@ -2,14 +2,15 @@
 
 利用 verilog 仿真，实现一个支持 RISCV 指令集的CPU
 
-需要使用乱序执行的 tomasulo
+需要使用乱序执行的 tomasulo 算法
 
 ## 具体实现
 
 1. verilog 仿真，设计好总体的架构
 2. 实现Instruction Fecth等功能
-3. 通过仿真测试点
-4. 用vivado生成`.bit` 文件，将其烧录到FPGA板上
+3. 在 cpu.v 中完成各部件的连线
+4. 通过仿真测试点 simulation
+5. 用vivado生成`.bit` 文件，将其烧录到FPGA板上
 
 Tomasulo 分为三部分：Issue -> EXE -> Write Back
 
@@ -43,7 +44,7 @@ Tomasulo 分为三部分：Issue -> EXE -> Write Back
     接收指令，按照 issue 的顺序提交
   - Reservation Station
 
-    实现乱序执行，每次挑选可以执行
+    实现 **乱序** 执行，每次挑选可以执行的指令(exe_index)，进行优先执行
     - ALU (EXE part) : 组合逻辑实现
   - Load/Store Buffer (a queue like RoB)
     - Load/Store Unit (EXE part)
@@ -53,6 +54,8 @@ Tomasulo 分为三部分：Issue -> EXE -> Write Back
   处理程序与内存之间的交互
 
 - Register File
+
+  寄存器，需要结合时序逻辑实现。或者说，计算出修改的值是组合逻辑，而修改生效是时序逻辑。
 
 - cpu.v
 

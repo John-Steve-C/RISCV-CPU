@@ -36,6 +36,7 @@ integer i;
 
 localparam IDLE = 0, FETCH = 1;		// status
 
+// pc 是提前计算的，实际操作的指针是 mem_pc
 reg [31:0] pc, mem_pc;	// mem_pc cope with icache and memory
 reg status;
 

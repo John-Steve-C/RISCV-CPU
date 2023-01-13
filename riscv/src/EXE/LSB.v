@@ -42,7 +42,7 @@ module LSB(
     // RoB
     input wire commit_flag_from_rob,
     input wire [4:0] rob_id_from_rob,
-    input wire [4:0] head_io_rob_id_from_rob,
+    input wire [4:0] head_io_rob_id_from_rob,   // rob[head] 是否为 io 操作
 
     // specify i/o
     output wire [4:0] io_rob_id_to_rob,
@@ -57,6 +57,7 @@ localparam LSB_SIZE = 16;
 `define LSBLen LSB_SIZE - 1 : 0
 
 // store_tail 表示 store 类指令的 tail，会修改 mem
+// tail == SIZE 表示 invalid
 reg [4:0] head, tail, store_tail;
 wire [4:0] next_head = (head == LSB_SIZE - 1) ? 0 : head + 1, next_tail = (tail == LSB_SIZE - 1) ? 0 : tail + 1;
 
@@ -81,7 +82,7 @@ reg [3:0] element_cnt;
 assign full_to_fetcher = (element_cnt >= LSB_SIZE - `FULL_WARNING);     // optimization
 wire [31:0] insert_cnt = en_signal_from_dispatcher ? 1 : 0;
 wire [31:0] issue_cnt = (((busy[head] && !busy_from_lsu && Q1[head] == 0 && Q2[head] == 0) && ((inst_name[head] <= `LHU && (head_addr != `RAM_IO_PORT || head_io_rob_id_from_rob == rob_id[head])) || (is_committed[head]))) ? -1 : 0);
-
+// 当 rob 的 head 恰为 lsb 中的 rob_id[head] 时，指令才能够 issue
 
 // query Q/V again
 // alu -> lsu
@@ -106,11 +107,11 @@ assign debug_imm_tail = imm[tail];
 
 always @(posedge clk_in) begin
     if (rst_in || (rollback_flag_from_rob && store_tail == LSB_SIZE)) begin
-        // store_tail 越界 & rollback_flag
+        // store_tail = SIZE 表示 invalid tail
         element_cnt <= 0;
         head <= 0;
         tail <= 0;
-        store_tail <= LSB_SIZE; //
+        store_tail <= LSB_SIZE; // 即为 invalid
         en_signal_to_lsu <= 0;
         for (i = 0; i < LSB_SIZE; i = i + 1) begin
             busy[i] <= 0;
@@ -156,7 +157,7 @@ always @(posedge clk_in) begin
                 end
                 // store
                 else begin
-                    if (is_committed[head]) begin
+                    if (is_committed[head]) begin   // store must wait until is_committed
                         busy[head] <= 0;
                         rob_id[head] <= 0;
                         is_committed[head] <= 0;
@@ -180,7 +181,7 @@ always @(posedge clk_in) begin
                 for (i = 0; i < LSB_SIZE; i = i + 1) begin
                     if (busy[i] && rob_id[i] == rob_id_from_rob && !is_committed[i]) begin
                         is_committed[i] <= 1;
-                        // get store_tail
+                        // update store_tail
                         if (inst_name[i] >= `SB) store_tail <= i;
                     end
                 end
